@@ -2,9 +2,9 @@ import { Request, Response, NextFunction } from "express"
 // import axios from "axios";
 
 const servicesState = [
-   { service: "order", isSuccess: true, response: { customerId: 36051260, paymentAmount: 97.01 }}, 
-   { service: "inventory", isSuccess: true, response: { customerId: 36051260, paymentAmount: 97.01 }}, 
-   { service: "payment", isSuccess: false, response: null }
+   { serviceName: "order", isSuccess: true, response: { customerId: 36051260, paymentAmount: 97.01 }}, 
+   { serviceName: "inventory", isSuccess: true, response: { customerId: 36051260, paymentAmount: 97.01 }}, 
+   { serviceName: "payment", isSuccess: false, response: null }
 ]
 
 const temp: any = [];
@@ -20,7 +20,7 @@ const orchestrate = async (req: Request, res:Response, next:NextFunction) => {
          const rollbackService = servicesState.filter(service => service?.isSuccess);
          for (let i = 0; i < rollbackService.length; i++) {
             const successService: any = rollbackService[i];
-            console.log("rollback for service: ", successService?.service);
+            console.log("rollback for service: ", successService?.serviceName);
             throw new Error("Compensate rollback also failed")
          };
       } catch (err) {
