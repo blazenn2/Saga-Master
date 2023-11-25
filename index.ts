@@ -1,7 +1,7 @@
 import express from "express";
-import {
-  orchestrateRouter
-} from "./routes/orchestrate"
+import { orchestrateRouter } from "./routes/orchestrate"
+import { exampleRouter } from "./routes/example";
+import { compensateRouter } from "./routes/compensate";
 
 const app = express();
 const port = 8888;
@@ -18,7 +18,11 @@ const port = 8888;
 
 app.use(express.json());
 
-app.use("/api/orchestrate", orchestrateRouter)
+app.use("/api/orchestrate", orchestrateRouter);
+
+app.use("/api/examples", exampleRouter);
+
+app.use("/api/compensate", compensateRouter);
 
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
