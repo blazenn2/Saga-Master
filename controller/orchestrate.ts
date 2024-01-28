@@ -5,6 +5,7 @@ import { API_TYPE, COMMUNICATION_TYPE } from "../utils/enum";
 import { HttpClient } from "../utils/http-client";
 
 const orchestrate = async (req: Request, res:Response) => {
+   if (tempData?.length <= 0) return res.status(404).json("You setup the orchestrate in order to trigger a transaction.")
    const token = extractToken(req);
    const bodyData = req.body;
    const sagaManagerData = [];
@@ -14,15 +15,25 @@ const orchestrate = async (req: Request, res:Response) => {
          console.log("🚀 ~ Accessing data from setup:", loopData)
          if (loopData?.communicateType?.toUpperCase() === COMMUNICATION_TYPE.REST) {
             let responseData = {};
-            if (loopData.apiType.toUpperCase() === API_TYPE.POST) responseData = await HttpClient.post(loopData.apiUrl, token, bodyData);
-            if (loopData.apiType.toUpperCase() === API_TYPE.GET) responseData = await HttpClient.get(loopData.apiUrl, token);
-            if (loopData.apiType.toUpperCase() === API_TYPE.PUT) responseData = await HttpClient.put(loopData.apiUrl, token, bodyData);
-            if (loopData.apiType.toUpperCase() === API_TYPE.DELETE) responseData = await HttpClient.delete(loopData.apiUrl, token);
-            const finalData = { ...loopData, response: responseData, isSuccess: true };
-            sagaManagerData.push(finalData);
+            try {
+               if (loopData.apiType.toUpperCase() === API_TYPE.POST) responseData = await HttpClient.post(loopData.apiUrl, token, bodyData);
+               if (loopData.apiType.toUpperCase() === API_TYPE.GET) responseData = await HttpClient.get(loopData.apiUrl, token);
+               if (loopData.apiType.toUpperCase() === API_TYPE.PUT) responseData = await HttpClient.put(loopData.apiUrl, token, bodyData);
+               if (loopData.apiType.toUpperCase() === API_TYPE.DELETE) responseData = await HttpClient.delete(loopData.apiUrl, token);
+               const finalData = { ...loopData, response: responseData, isSuccess: true };
+               sagaManagerData.push(finalData);
+            } catch (e) {
+               if (!loopData?.triggerCompensate) {
+                  const finalData = { ...loopData, response: e, isSuccess: false };
+                  sagaManagerData.push(finalData);
+               } else {
+                  throw new Error("Exception caught while processing on service" + loopData?.serviceName);
+               }
+            }
          }
       }
-      return res.json({ message: "All transactions were successful", responses: sagaManagerData });
+      const responseMessage = sagaManagerData.find(s => !s?.isSuccess) ? "Not all transactions were successful but no rollbacks were made." : "All transactions were successful";
+      return res.json({ message: responseMessage, responses: sagaManagerData });
    } catch (err) {
       try {
          const rollbackResponses = [];
