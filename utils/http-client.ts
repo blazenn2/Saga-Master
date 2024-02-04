@@ -2,7 +2,6 @@ import type { SearchParamOptions } from '../utils/types';
 import axios from 'axios';
 
 const Axios = (url: string, token: string | null) => {
-  console.log("🚀 ~ file: http-client.ts:5 ~ Axios ~ url:", url)
   
   const Axios = axios.create({
     baseURL: url,

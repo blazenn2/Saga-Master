@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { SagaSetupData } from "../types";
 
 let tempData: any = [];
 
@@ -43,7 +44,7 @@ const exampleObject = [
 
 const setSetup = async (req: Request, res: Response, next: NextFunction) => {
   if (Array.isArray(req.body) && req.body.length) {
-    tempData = req.body?.map((v) => ({ ...v, isSuccess: false, response: {}, triggerCompensate: v?.triggerCompensate ?? true }));
+    tempData = req.body?.map((v: SagaSetupData) => ({ ...v, isSuccess: false, response: {}, triggerCompensate: v?.triggerCompensate ?? true }));
   } else
     return res.json({
       message: "Invalid request. The request body must be an array of objects.",

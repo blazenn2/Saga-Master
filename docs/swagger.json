@@ -1,0 +1,135 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "2.0.0",
+    "title": "Saga Master",
+    "description": "Orchestrates your microservices in a mannerly fashion",
+    "contact": {
+      "name": "API Support",
+      "email": "hamzanawab.bs@gmail.com"
+    }
+  },
+  "host": "localhost:8888",
+  "basePath": "/",
+  "tags": [
+    {
+      "name": "Queue CRUD",
+      "description": "Queue related apis"
+    },
+    {
+      "name": "Health",
+      "description": "Health Check"
+    }
+  ],
+  "schemes": [
+    "http"
+  ],
+  "securityDefinitions": {},
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/orchestrate/trigger": {
+      "post": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "length": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/api/orchestrate/setup": {
+      "post": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "length": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "get": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/examples/post-api": {
+      "post": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/examples/get-api": {
+      "get": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/examples/put-api": {
+      "put": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/examples/fail-api": {
+      "post": {
+        "description": "",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    }
+  }
+}
