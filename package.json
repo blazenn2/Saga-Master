@@ -3,19 +3,23 @@
     "axios": "^1.6.2",
     "express": "^4.18.2",
     "nodemon": "^3.0.1",
+    "swagger-autogen": "^2.23.7",
+    "swagger-ui-express": "^5.0.0",
     "ts-node": "^10.9.1"
   },
   "name": "saga",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon --exec ts-node index.ts"
+    "start": "nodemon --exec ts-node index.ts",
+    "swagger-autogen": "node ./docs/swagger.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "@types/express": "^4.17.21"
+    "@types/express": "^4.17.21",
+    "@types/swagger-ui-express": "^4.1.6"
   }
 }
