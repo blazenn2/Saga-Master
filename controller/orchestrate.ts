@@ -1,6 +1,6 @@
 import { Request, Response } from "express"
 import { tempData } from "./setup";
-import { addPathToUrlFromResponse, extractToken } from "../utils/functions";
+import { addPathAndQueryToUrlFromResponse, extractToken } from "../utils/functions";
 import { API_TYPE, COMMUNICATION_TYPE } from "../utils/enum";
 import { HttpClient } from "../utils/http-client";
 import { SagaSetupData } from "../types";
@@ -53,11 +53,10 @@ const orchestrate = async (req: Request, res: Response) => {
                console.log("🚀 ~ Commencing rollback on service -|", successService?.serviceName, " |");
                console.log("🚀 ~ Rollback Data =====> ", successService?.response);
                let responseOfRollbackService;
-               // let responseOfRollbackService = await HttpClient.post(successService?.compensateApiUrl, token, successService?.response);
                if (successService?.compensateApiType?.toUpperCase() === API_TYPE.POST) responseOfRollbackService = await HttpClient.post(successService?.compensateApiUrl, token, bodyData);
                if (successService?.compensateApiType?.toUpperCase() === API_TYPE.GET) responseOfRollbackService = await HttpClient.get(successService?.compensateApiUrl, token);
-               if (successService?.compensateApiType?.toUpperCase() === API_TYPE.PUT) responseOfRollbackService = await HttpClient.put(addPathToUrlFromResponse(successService), token, bodyData);
-               if (successService?.compensateApiType?.toUpperCase() === API_TYPE.DELETE) responseOfRollbackService = await HttpClient.delete(addPathToUrlFromResponse(successService), token);
+               if (successService?.compensateApiType?.toUpperCase() === API_TYPE.PUT) responseOfRollbackService = await HttpClient.put(addPathAndQueryToUrlFromResponse(successService), token, bodyData);
+               if (successService?.compensateApiType?.toUpperCase() === API_TYPE.DELETE) responseOfRollbackService = await HttpClient.delete(addPathAndQueryToUrlFromResponse(successService), token);
                rollbackResponses.push({ ...successService, isRollbackSuccessful: true, rollbackResponse: responseOfRollbackService });
             }
          };
