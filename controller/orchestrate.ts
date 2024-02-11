@@ -6,14 +6,17 @@ import { HttpClient } from "../utils/http-client";
 import { SagaSetupData } from "../types";
 
 const orchestrate = async (req: Request, res: Response) => {
-   if (tempData?.length <= 0) return res.status(404).json("You setup the orchestrate in order to trigger a transaction.")
+   const { url } = req.params;
+   if (tempData?.length <= 0) return res.status(404).json("You need to setup the orchestrate in order to trigger a transaction.")
+   let orchestrateData: SagaSetupData[] = tempData?.find((t: any) => t?.url === url)?.setup ?? [];
+   if (!orchestrateData?.length) return res.status(404).json(`You need to setup the orchestrate for /${url} in order to trigger a transaction.`)
    console.log(`🚀 ~ Orchestration process started at ${(new Date()).toLocaleDateString()}`);
    const token = extractToken(req);
    const bodyData = req.body;
    const sagaManagerData = [];
    try {
-      for (let i = 0; i < tempData.length; i++) {
-         const loopData = tempData[i];
+      for (let i = 0; i < orchestrateData.length; i++) {
+         const loopData = orchestrateData[i];
          console.log(`====================================================`);
          console.log(`🚀 ~ Orchestration in progress ======> Starting transaction on ${loopData.serviceName} >>> Accessing ${i + 1} in queue <<<`);
          console.log("🚀 ~ Accessing data from setup:", loopData);
@@ -61,7 +64,7 @@ const orchestrate = async (req: Request, res: Response) => {
             }
          };
          console.log(`🚀 ~ Orchestration process has been successful and ended at ${(new Date()).toLocaleDateString()}`);
-         return res.json({ message: `${tempData[rollbackResponses.length]?.serviceName?.toUpperCase()} service failed. Rollbacks on successfull transactions went successfull.`, responses: [...rollbackResponses, ...tempData.slice(rollbackResponses.length)] });
+         return res.json({ message: `${orchestrateData[rollbackResponses.length]?.serviceName?.toUpperCase()} service failed. Rollbacks on successfull transactions went successfull.`, responses: [...rollbackResponses, ...orchestrateData.slice(rollbackResponses.length)] });
       } catch (err) {
          console.log("🚀 ~ Recieved error on commencing rollback");
          console.log(`🚀 ~ Orchestration process has been failed and ended at ${(new Date()).toLocaleDateString()}`);
