@@ -18,3 +18,8 @@ export interface SagaSetupData {
     triggerCompensate: Boolean,
     response: any
 }
+
+export interface Setup {
+    url: string;
+    setup: SagaSetupData[]
+}
