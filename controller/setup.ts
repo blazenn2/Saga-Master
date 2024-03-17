@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { SagaSetupData, Setup } from "../types";
+import { logging } from "../utils/functions";
+import { LOGGING_EVENT_TYPE } from "../utils/enum";
 
 let tempData: Setup[] = [];
 
@@ -54,8 +56,8 @@ const setSetup = async (req: Request, res: Response, next: NextFunction) => {
       message: "Invalid request.",
       example: exampleObject,
     });
-  console.log("🚀 ~ file: setup.ts:7 ~ setSetup ~ req.body:", req.body);
-  return res.json({
+    logging(LOGGING_EVENT_TYPE.SETUP, req.body);
+    return res.json({
     message: "Setup done successfully!",
     response: tempData,
   });
