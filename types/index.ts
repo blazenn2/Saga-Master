@@ -16,7 +16,8 @@ export interface SagaSetupData {
     serviceName: string,
     sendResponseToAPI: Boolean,
     triggerCompensate: Boolean,
-    response: any
+    response: any,
+    isSuccess?: boolean,
 }
 
 export interface Setup {

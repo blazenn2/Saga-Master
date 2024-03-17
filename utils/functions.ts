@@ -1,5 +1,6 @@
 import { Request } from "express"
 import { SagaSetupData } from "../types";
+import { LOGGING_EVENT_TYPE } from "./enum";
 
 
 export function extractToken (req: Request) {
@@ -56,3 +57,28 @@ export function addPathAndQueryToUrlFromResponse (loopData: SagaSetupData) {
 //     });
 //     return newUrl;
 // }
+
+export const logging = (event: LOGGING_EVENT_TYPE, data?: any, loopCounter?: number) => {
+    if (event === LOGGING_EVENT_TYPE.SETUP) console.log("🚀 ~ Setting up orchestrate data:", data);
+    if (event === LOGGING_EVENT_TYPE.START) console.log(`🚀 ~ Orchestration process started at ${(new Date()).toLocaleDateString()}`);
+    if (event === LOGGING_EVENT_TYPE.REST_LOOP_IN_PROCESS && loopCounter !== undefined) {
+       console.log(`====================================================`);
+       console.log(`🚀 ~ Orchestration in progress ======> Starting transaction on ${data.serviceName} >>> Accessing ${loopCounter + 1} in queue <<<`);
+       console.log("🚀 ~ Accessing data from setup:", data);
+    };
+    if (event === LOGGING_EVENT_TYPE.REST_LOOP_SUCCESSFUL && loopCounter !== undefined) console.log(`🚀 ~ Transaction No.${loopCounter + 1} was successfull`);
+    if (event === LOGGING_EVENT_TYPE.REST_SUCCESSFUL) console.log(`🚀 ~ Orchestration process has been successful and ended at ${(new Date()).toLocaleDateString()}`);
+    if (event === LOGGING_EVENT_TYPE.REST_LOOP_COMPENSATION_START) {
+       console.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+       console.log(`🚀 ~ ${data?.err}, orchestration of rollbacks in progress. Commence rollback against this data =====>`, data?.sagaManagerData)
+       console.log("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+    }
+    if (event === LOGGING_EVENT_TYPE.REST_LOOP_COMPENSATION_IN_PROGRESS) {
+       console.log("🚀 ~ Commencing rollback on service -|", data?.serviceName, " |");
+       console.log("🚀 ~ Rollback Data =====> ", data?.response);
+    }
+    if (event === LOGGING_EVENT_TYPE.REST_FAILED) {
+       console.log("🚀 ~ Recieved error on commencing rollback");
+       console.log(`🚀 ~ Orchestration process has been failed and ended at ${(new Date()).toLocaleDateString()}`);
+    }
+ };
