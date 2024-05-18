@@ -12,7 +12,8 @@ export enum EVENT_TYPE {
 
 export enum COMMUNICATION_TYPE {
     REST = "REST",
-    EVENT = "EVENT"
+    EVENT = "EVENT",
+    KAFKA = "KAFKA",
 }
 
 export enum LOGGING_EVENT_TYPE {
