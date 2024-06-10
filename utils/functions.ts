@@ -1,5 +1,5 @@
-import { Request } from "express"
-import { KafkaPayload, KafkaProducerUtilFunction, SagaRestSetupData } from "../types";
+import { Request, Response } from "express"
+import { KafkaPayload, KafkaProducerUtilFunction, SagaKafkaSetupData, SagaRestSetupData } from "../types";
 import { LOGGING_EVENT_TYPE } from "./enum";
 import { Kafka } from "kafkajs";
 
@@ -89,15 +89,15 @@ const connectKafka = (clientId: string, brokers: string[]) => new Kafka({
     brokers: brokers,
 });
 
-export const kafkaProducer = async (clientId: string, brokers: string[], topic: string, payload: KafkaPayload[]) => {
+export const kafkaProducer = async (clientId: string, brokers: string[], topic: string, payload: KafkaPayload | KafkaPayload[]) => {
     try {
         const kafka = connectKafka(clientId, brokers);
-    
         const producer = kafka.producer();
         await producer.connect();
+        const kafkaMessage = Array.isArray(payload) ? payload : [payload];
         await producer.send({
             topic: topic,
-            messages: payload.map(p => ({...p, value: JSON.stringify(p)}))
+            messages: kafkaMessage.map(p => ({...p, value: JSON.stringify(p)}))
         });
         console.log(`Message sent successfully to the ${topic}`);
         producer.disconnect();
@@ -107,39 +107,53 @@ export const kafkaProducer = async (clientId: string, brokers: string[], topic: 
     }
 };
 
-export const kafkaConsumer = async (clientId: string, brokers: string[], topic: string, fromBeginning: boolean = false, groupId: string, producerData: KafkaProducerUtilFunction | null, res: any, responseArray: any, lengthOfPayload: number, successResponse: any) => {
+export const kafkaConsumer = async (loopData: SagaKafkaSetupData, producerData: KafkaProducerUtilFunction | null, res: Response, responseQueue: any, lengthOfPayload: number, isCompensation?: boolean) => {
     try {
+        const { clientId, brokers, consumer : { topic, groupId } } = loopData;
         const kafka = connectKafka(clientId, brokers);
         const admin = kafka.admin();
         const consumer = kafka.consumer({ groupId: groupId });
         const recentOffset = await admin.fetchTopicOffsets(topic);
-        console.log(`Kafka consumer with group["${groupId}"] has this recent off sets: `, recentOffset)
+        const latestOffset = recentOffset?.[0]?.offset;
         await consumer.connect();
-        await consumer.subscribe({ topic: topic, fromBeginning: fromBeginning });
+        await consumer.subscribe({ topic: topic, fromBeginning: false });
         await consumer.run({
             eachMessage: async ({ partition, message }) => {
                 const parsedMessage = await JSON.parse(message?.value?.toString() as string);
-                const parsedKey =  message?.key?.toString();
+                const parsedKey =  message?.key?.toString() ?? 'unparsableKey';
                 console.log(`Message received from ${topic}`);
                 console.log("Message key -> ", parsedKey);
                 console.log("Message value ->", parsedMessage);
-                // if (recentOffset[0].offset === message.offset) {
-                    
-                // }
-                console.log("Message offset are matched! This is the latest message recieved.");
-                    console.log("Closing consumer now...");
-                    if (parsedMessage?.success) {
-                        console.log("Parsed Message matched! =>", parsedMessage?.success);
-                        responseArray.push(true)
+                const isSuccess = Boolean(parsedMessage?.success);
+                console.log("Is response successfull? ===>", isSuccess);
+                if (Number(message.offset) >= Number(latestOffset) + 1) {
+                    if (isSuccess) {
+                        const response = { [parsedKey]: parsedMessage };
+                        console.log("Joined response of the consumer ->", response);
+                        responseQueue.push(response);
+                    } else {
+                        console.error("Exception caught while processing on topic [{" + topic + "}], starting the compensation process!");
+                        kafkaConsumerCompensation(res, loopData, responseQueue);
+                        consumer.disconnect();
                     }
                     if (producerData !== null) kafkaProducer(producerData?.clientId, producerData?.brokers, producerData?.topic, producerData?.payload);
-                    console.log("🚀 ~ eachMessage: ~ responseArray:", responseArray)
-                    console.log("🚀 ~ eachMessage: ~ lengthOfPayload:", lengthOfPayload)
-                    if (responseArray.length === lengthOfPayload) return res.status(200).json("it works!!!");
+                    if (responseQueue.length === lengthOfPayload) res.status(200).json(responseQueue);
+                }
             }
         });
     } catch (err) {
         console.error("An exception encountered in the Kafka consumer:", err);
         throw new Error("An exception encountered in the Kafka consumer. Please refer to logs for more details.");
+    }
+}
+
+const kafkaConsumerCompensation = async (res: Response, loopData: SagaKafkaSetupData, responseQueue: any) => {
+    try {
+        const noOfCompensations = responseQueue.length;
+        for (let i = 0; i < noOfCompensations; i++) {
+            
+        }
+    } catch (err) {
+
     }
 }

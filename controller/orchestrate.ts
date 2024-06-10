@@ -29,12 +29,12 @@ const orchestrate = async (req: Request, res: Response) => {
                   clientId: nextProducerDataInOrchestrateData?.clientId,
                   brokers: nextProducerDataInOrchestrateData?.brokers,
                   topic: nextProducerDataInOrchestrateData?.producer?.topic,
-                  payload: nextProducerDataInOrchestrateData?.producer?.messages
+                  payload: bodyData
                }
             }
             await runKafkaConsumerOrchestration(loopData as SagaKafkaSetupData, nextProducerData, res, kafkaSuccess, orchestrateData.length);
             if (isLastOfArray) {
-               await runKafkaProducerOrchestration(loopData as SagaKafkaSetupData);
+               await runKafkaProducerOrchestration(loopData as SagaKafkaSetupData, bodyData);
             }
          }
       }
@@ -43,6 +43,7 @@ const orchestrate = async (req: Request, res: Response) => {
       const isKafka = orchestrateData.find(o => o.communicateType === COMMUNICATION_TYPE.KAFKA)
       if (!isKafka) return res.json({ message: responseMessage, responses: sagaManagerData });
    } catch (err) {
+      // Place kafka compensate logic here
       try {
          const rollbackResponses: any[] = [];
          logging(LOGGING_EVENT_TYPE.REST_LOOP_COMPENSATION_START, { sagaManagerData: sagaManagerData, err: err });
@@ -109,13 +110,12 @@ const runRestCompensationOrchestration = async (sagaManagerData: SagaRestSetupDa
 };
 
 const runKafkaConsumerOrchestration = async (loopData: SagaKafkaSetupData, nextProducerData: KafkaProducerUtilFunction | null, res: any, responseArray: any, lengthOfPayload: number) => {
-   const consumerData = loopData?.consumer;
-   await kafkaConsumer(loopData?.clientId as string, loopData?.brokers as string[], consumerData?.topic, consumerData?.fromBeginning, consumerData?.groupId, nextProducerData, res, responseArray, lengthOfPayload, loopData?.successResponse);
+   await kafkaConsumer(loopData, nextProducerData, res, responseArray, lengthOfPayload);
 };
 
-const runKafkaProducerOrchestration = async (loopData: SagaKafkaSetupData) => {
+const runKafkaProducerOrchestration = async (loopData: SagaKafkaSetupData, payload: any) => {
    const producerData = loopData?.producer;
-   await kafkaProducer(loopData?.clientId as string, loopData?.brokers as string[], producerData?.topic as string, producerData?.messages);
+   await kafkaProducer(loopData?.clientId as string, loopData?.brokers as string[], producerData?.topic as string, payload);
 };
 
 export { orchestrate };

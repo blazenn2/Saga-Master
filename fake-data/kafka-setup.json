@@ -7,52 +7,15 @@
       "brokers": ["localhost:9092"],
       "serviceName": "order",
       "producer": {
-        "topic": "saga-events",
-        "messages": [
-          {
-            "key": "create-order",
-            "value": [
-              {
-                "id": 1,
-                "name": "order",
-                "orderName": "My order :D"
-              },
-              {
-                "id": 2,
-                "name": "2nd order",
-                "orderName": "My second order :D"
-              }
-            ]
-          }
-        ]
+        "topic": "saga-events"
       },
       "consumer": {
         "topic": "saga-events",
         "fromBeginning": false,
-        "triggerCompensate": {
-          "error": "hello world"
-        },
         "groupId": "my-group"
       },
       "compensateProducer": {
-        "topic": "compensate-saga-events",
-        "message": [
-          {
-            "key": "create-order",
-            "value": [
-              {
-                "id": 1,
-                "name": "order",
-                "orderName": "My order :D"
-              },
-              {
-                "id": 2,
-                "name": "2nd order",
-                "orderName": "My second order :D"
-              }
-            ]
-          }
-        ]
+        "topic": "compensate-saga-events"
       }
     },
     {
@@ -60,52 +23,15 @@
       "clientId": "my-app",
       "brokers": ["localhost:9092"],
       "producer": {
-        "topic": "saga-events-2",
-        "messages": [
-          {
-            "key": "create-order",
-            "value": [
-              {
-                "id": 1,
-                "name": "order",
-                "orderName": "My order :D"
-              },
-              {
-                "id": 2,
-                "name": "2nd order",
-                "orderName": "My second order :D"
-              }
-            ]
-          }
-        ]
+        "topic": "saga-events-2"
       },
       "consumer": {
         "topic": "saga-events-2",
         "fromBeginning": false,
-        "triggerCompensate": {
-          "error": "hello world"
-        },
         "groupId": "my-group"
       },
       "compensateProducer": {
-        "topic": "compensate-saga-events-2",
-        "message": [
-          {
-            "key": "create-order",
-            "value": [
-              {
-                "id": 1,
-                "name": "order",
-                "orderName": "My order :D"
-              },
-              {
-                "id": 2,
-                "name": "2nd order",
-                "orderName": "My second order :D"
-              }
-            ]
-          }
-        ]
+        "topic": "compensate-saga-events-2"
       }
     }
   ]
