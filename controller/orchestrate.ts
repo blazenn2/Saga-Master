@@ -20,7 +20,6 @@ const orchestrate = async (req: Request, res: Response) => {
          if (loopData?.communicateType?.toUpperCase() === COMMUNICATION_TYPE.REST) {
             await runRestOrchestration(loopData as SagaRestSetupData, token, bodyData, sagaManagerData, i);
          } else if (loopData?.communicateType?.toUpperCase() === COMMUNICATION_TYPE.KAFKA) {
-            // KAFKA CODE
             let nextProducerData: KafkaProducerUtilFunction | null = null;
             const isLastOfArray = i === orchestrateData?.length - 1;
             if (!isLastOfArray) {
@@ -31,8 +30,10 @@ const orchestrate = async (req: Request, res: Response) => {
                   topic: nextProducerDataInOrchestrateData?.producer?.topic,
                   payload: bodyData
                }
+               console.log("🚀 ~ orchestrate ~ nextProducerDataInOrchestrateData:", nextProducerDataInOrchestrateData)
+               console.log("🚀 ~ orchestrate ~ nextProducerData:", nextProducerData)
             }
-            await runKafkaConsumerOrchestration(loopData as SagaKafkaSetupData, nextProducerData, res, kafkaSuccess, orchestrateData.length);
+            await runKafkaConsumerOrchestration(loopData as SagaKafkaSetupData, nextProducerData, res, kafkaSuccess, orchestrateData as SagaKafkaSetupData[], bodyData);
             if (isLastOfArray) {
                await runKafkaProducerOrchestration(loopData as SagaKafkaSetupData, bodyData);
             }
@@ -109,8 +110,9 @@ const runRestCompensationOrchestration = async (sagaManagerData: SagaRestSetupDa
    }
 };
 
-const runKafkaConsumerOrchestration = async (loopData: SagaKafkaSetupData, nextProducerData: KafkaProducerUtilFunction | null, res: any, responseArray: any, lengthOfPayload: number) => {
-   await kafkaConsumer(loopData, nextProducerData, res, responseArray, lengthOfPayload);
+const runKafkaConsumerOrchestration = async (loopData: SagaKafkaSetupData, nextProducerData: KafkaProducerUtilFunction | null, res: any, responseArray: any, orchestrateData: SagaKafkaSetupData[], bodyData: any) => {
+   const lengthOfPayload = orchestrateData.length;
+   await kafkaConsumer(loopData, nextProducerData, res, responseArray, lengthOfPayload, orchestrateData, bodyData);
 };
 
 const runKafkaProducerOrchestration = async (loopData: SagaKafkaSetupData, payload: any) => {

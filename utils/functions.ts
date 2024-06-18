@@ -32,6 +32,15 @@ export function addPathAndQueryToUrlFromResponse (loopData: SagaRestSetupData) {
     //     return newUrl;
 }
 
+const destructureConsumerConfig = (loopData: SagaKafkaSetupData, isCompensation?: Boolean) => {
+    if (isCompensation) {
+        const { clientId, brokers, compensateConsumer : { topic, groupId } } = loopData
+        return { clientId, brokers, topic, groupId };
+    } else {
+        const { clientId, brokers, consumer : { topic, groupId } } = loopData
+        return { clientId, brokers, topic, groupId };
+    }
+}
 
 
 // !TBD: This function needs to a bit more work ... it is a bit complicated atm 
@@ -107,9 +116,11 @@ export const kafkaProducer = async (clientId: string, brokers: string[], topic: 
     }
 };
 
-export const kafkaConsumer = async (loopData: SagaKafkaSetupData, producerData: KafkaProducerUtilFunction | null, res: Response, responseQueue: any, lengthOfPayload: number, isCompensation?: boolean) => {
+export const kafkaConsumer = async (loopData: SagaKafkaSetupData, producerData: KafkaProducerUtilFunction | null, res: Response, responseQueue: any, lengthOfPayload: number, orchestrateData:SagaKafkaSetupData[], bodyData: any, isCompensation?: boolean) => {
     try {
-        const { clientId, brokers, consumer : { topic, groupId } } = loopData;
+        if (isCompensation) console.log("🚀 ~ kafkaConsumer ~ isCompensation:", isCompensation)
+        const { clientId, brokers, topic, groupId } = destructureConsumerConfig(loopData, isCompensation);
+        console.log("🚀 ~ kafkaConsumer ~ clientId, brokers, topic, groupId:", clientId, brokers, topic, groupId)
         const kafka = connectKafka(clientId, brokers);
         const admin = kafka.admin();
         const consumer = kafka.consumer({ groupId: groupId });
@@ -124,20 +135,25 @@ export const kafkaConsumer = async (loopData: SagaKafkaSetupData, producerData: 
                 console.log(`Message received from ${topic}`);
                 console.log("Message key -> ", parsedKey);
                 console.log("Message value ->", parsedMessage);
-                const isSuccess = Boolean(parsedMessage?.success);
-                console.log("Is response successfull? ===>", isSuccess);
+                const isSuccess = parsedMessage?.success;
+                console.log(`Is response successfull? ${isCompensation} ===>`, isSuccess);
                 if (Number(message.offset) >= Number(latestOffset) + 1) {
-                    if (isSuccess) {
+                    if (isSuccess === true) {
                         const response = { [parsedKey]: parsedMessage };
                         console.log("Joined response of the consumer ->", response);
                         responseQueue.push(response);
-                    } else {
+                        console.log("🚀 ~ kafkaConsumer ~ producerData:", producerData)
+                        if (producerData) {
+                            const { clientId, brokers, topic, payload } = producerData;
+                            await kafkaProducer(clientId, brokers, topic, payload);
+                        }
+                        if (responseQueue.length === lengthOfPayload) res.status(200).json(responseQueue);
+                    } else if (isSuccess === false && !isCompensation) {
                         console.error("Exception caught while processing on topic [{" + topic + "}], starting the compensation process!");
-                        kafkaConsumerCompensation(res, loopData, responseQueue);
-                        consumer.disconnect();
+                        kafkaConsumerCompensation(res, responseQueue, orchestrateData, bodyData);
+                    } else if (isSuccess !== undefined) {
+                        res.status(500).json({ error: "Failed to compensate, please refer to logs."})
                     }
-                    if (producerData !== null) kafkaProducer(producerData?.clientId, producerData?.brokers, producerData?.topic, producerData?.payload);
-                    if (responseQueue.length === lengthOfPayload) res.status(200).json(responseQueue);
                 }
             }
         });
@@ -147,13 +163,31 @@ export const kafkaConsumer = async (loopData: SagaKafkaSetupData, producerData: 
     }
 }
 
-const kafkaConsumerCompensation = async (res: Response, loopData: SagaKafkaSetupData, responseQueue: any) => {
+const kafkaConsumerCompensation = async (res: Response, responseQueue: any, orchestrateData:SagaKafkaSetupData[], bodyData: KafkaPayload[]) => {
     try {
         const noOfCompensations = responseQueue.length;
+        const responseArray: boolean[] = [];
         for (let i = 0; i < noOfCompensations; i++) {
-            
+            const compensateLoopData = orchestrateData[i];
+            let nextProducerData: KafkaProducerUtilFunction | null = null;
+            const isLastOfArray = i === noOfCompensations - 1;
+            if (!isLastOfArray) {
+               const nextProducerDataInOrchestrateData = (orchestrateData[i + 1] as SagaKafkaSetupData);
+               nextProducerData = {
+                  clientId: nextProducerDataInOrchestrateData?.clientId,
+                  brokers: nextProducerDataInOrchestrateData?.brokers,
+                  topic: nextProducerDataInOrchestrateData?.producer?.topic,
+                  payload: bodyData
+               }
+            }
+            console.log("Attaching compensation kafka event with topic: ", compensateLoopData?.compensateConsumer?.topic);
+            console.log("🚀 ~~~ kafkaConsumerCompensation ~ compensateLoopData:", compensateLoopData)
+            await kafkaConsumer(compensateLoopData, nextProducerData, res, responseArray, noOfCompensations, orchestrateData, bodyData, true);
+            if (isLastOfArray) {
+                await kafkaProducer(compensateLoopData?.clientId, compensateLoopData?.brokers, compensateLoopData?.compensateConsumer?.topic, bodyData);
+            }
         }
     } catch (err) {
-
+        console.error(err);
     }
 }

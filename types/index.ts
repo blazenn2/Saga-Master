@@ -32,6 +32,7 @@ export interface SagaKafkaSetupData {
   producer: KakfaProducer;
   consumer: KafkaConsumer;
   compensateProducer: KakfaProducer;
+  compensateConsumer: KafkaConsumer;
   successResponse: any;
 }
 
