@@ -1,5 +1,5 @@
-import type { SearchParamOptions } from '../utils/types';
 import axios from 'axios';
+import { SearchParamOptions } from '../types';
 
 const Axios = (url: string, token: string | null) => {
   

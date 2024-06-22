@@ -1,0 +1,38 @@
+{
+  "url": "create-payment-intend",
+  "setup": [
+    {
+      "communicateType": "KAFKA",
+      "clientId": "my-app",
+      "brokers": ["localhost:9092"],
+      "serviceName": "order",
+      "producer": {
+        "topic": "saga-events"
+      },
+      "consumer": {
+        "topic": "saga-events",
+        "fromBeginning": false,
+        "groupId": "my-group"
+      },
+      "compensateProducer": {
+        "topic": "compensate-saga-events"
+      }
+    },
+    {
+      "communicateType": "KAFKA",
+      "clientId": "my-app",
+      "brokers": ["localhost:9092"],
+      "producer": {
+        "topic": "saga-events-2"
+      },
+      "consumer": {
+        "topic": "saga-events-2",
+        "fromBeginning": false,
+        "groupId": "my-group"
+      },
+      "compensateProducer": {
+        "topic": "compensate-saga-events-2"
+      }
+    }
+  ]
+}

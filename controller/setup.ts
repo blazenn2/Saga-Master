@@ -1,9 +1,40 @@
 import { Request, Response, NextFunction } from "express";
-import { SagaSetupData, Setup } from "../types";
+import { SagaRestSetupData, Setup } from "../types";
+// import { SagaRestSetupData } from "../types"; // Remove this too
 import { logging } from "../utils/functions";
 import { LOGGING_EVENT_TYPE } from "../utils/enum";
 
-let tempData: Setup[] = [];
+let tempData: Setup[] = []; // Hard coding for now
+// let tempData: any = [{
+//   url: "create-payment-intend",
+//   setup: [
+//     {
+//       communicateType: "KAFKA",
+//       clientId: "my-app",
+//       brokers: ["localhost:9092"],
+//       producers: [  {
+//           topic: "orchestration",
+//           messages: [{
+//             key: "create-order",
+//             value: [{
+//               id: 1,
+//               name: "order",
+//               classValue: "Just order :D"
+//             },
+//             {
+//               id: 2,
+//               name: "order",
+//               classValue: "Just another order :D"
+//             }]
+//           }]
+//         }],
+//       consumers: [{
+//         topic: "orchestration",
+//         fromBeginning: true
+//       }]
+//     },
+//   ]
+// }]
 
 const exampleObject = [
   {
@@ -46,7 +77,7 @@ const exampleObject = [
 
 const setSetup = async (req: Request, res: Response, next: NextFunction) => {
   if (Array.isArray(req.body?.setup) && req.body?.setup?.length) {
-    const setup = req.body?.setup?.map((v: SagaSetupData) => ({ ...v, isSuccess: false, response: {}, triggerCompensate: v?.triggerCompensate ?? true }));
+    const setup = req.body?.setup?.map((v: SagaRestSetupData) => ({ ...v, isSuccess: false, response: {}, triggerCompensate: v?.triggerCompensate ?? true }));
     tempData.unshift({
       url: req.body?.url,
       setup: setup,
@@ -56,8 +87,8 @@ const setSetup = async (req: Request, res: Response, next: NextFunction) => {
       message: "Invalid request.",
       example: exampleObject,
     });
-    logging(LOGGING_EVENT_TYPE.SETUP, req.body);
-    return res.json({
+  logging(LOGGING_EVENT_TYPE.SETUP, req.body);
+  return res.json({
     message: "Setup done successfully!",
     response: tempData,
   });
@@ -69,9 +100,9 @@ const getSetup = async (req: Request, res: Response, next: NextFunction) => {
 
 const updateSetup = async (req: Request, res: Response, next: NextFunction) => {
   const { url } = req.params;
-  const indexOfSetupToBeUpdated = tempData.findIndex(t => t?.url === url);
+  const indexOfSetupToBeUpdated = tempData.findIndex((t: any) => t?.url === url); // Remove any when done
   if (indexOfSetupToBeUpdated === -1) return res.status(404).json("The url provided doesn't exist in the system");
-  tempData[indexOfSetupToBeUpdated].setup = req.body?.setup?.map((v: SagaSetupData) => ({ ...v, isSuccess: false, response: {}, triggerCompensate: v?.triggerCompensate ?? true }));
+  tempData[indexOfSetupToBeUpdated].setup = req.body?.setup?.map((v: SagaRestSetupData) => ({ ...v, isSuccess: false, response: {}, triggerCompensate: v?.triggerCompensate ?? true }));
   return res.status(200).json({
     message: `/${url} setup is updated successfully. Below is the updated setup.`,
     setup: tempData
@@ -80,7 +111,7 @@ const updateSetup = async (req: Request, res: Response, next: NextFunction) => {
 
 const deleteSetup = async (req: Request, res: Response, next: NextFunction) => {
   const { url } = req.params;
-  const indexOfDeleteSetup = tempData.findIndex(t => t?.url === url);
+  const indexOfDeleteSetup = tempData.findIndex((t: any) => t?.url === url); // Remove any when done
   if (indexOfDeleteSetup === -1) return res.status(404).json("The url provided doesn't exist in the system");
   tempData.splice(indexOfDeleteSetup, 1);
   return res.status(202).json({
