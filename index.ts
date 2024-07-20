@@ -1,3 +1,5 @@
+require('dotenv').config()
+
 import express from "express";
 import { orchestrateRouter } from "./routes/orchestrate"
 import { exampleRouter } from "./routes/example";
@@ -6,7 +8,7 @@ import swaggerUi from "swagger-ui-express";
 import swaggerDocument from "./docs/swagger.json"
 
 const app = express();
-const port = 8888;
+const port = process?.env?.port || 8888;
 
 // const TOKEN = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImF1dGgiOiJST0xFX0FETUlOLFJPTEVfVVNFUiIsImV4cCI6MTcwMDU5MzQwM30.MtlA8ZYOSW_hqDDghNAIAp8mf14XjSBs0DFOedHCDUAeyRg7SmznI4HOSHfh7Ksy3bybGtqR1FNrUKt1FaBYIA";
 
