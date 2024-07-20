@@ -4,37 +4,7 @@ import { SagaRestSetupData, Setup } from "../types";
 import { logging } from "../utils/functions";
 import { LOGGING_EVENT_TYPE } from "../utils/enum";
 
-let tempData: Setup[] = []; // Hard coding for now
-// let tempData: any = [{
-//   url: "create-payment-intend",
-//   setup: [
-//     {
-//       communicateType: "KAFKA",
-//       clientId: "my-app",
-//       brokers: ["localhost:9092"],
-//       producers: [  {
-//           topic: "orchestration",
-//           messages: [{
-//             key: "create-order",
-//             value: [{
-//               id: 1,
-//               name: "order",
-//               classValue: "Just order :D"
-//             },
-//             {
-//               id: 2,
-//               name: "order",
-//               classValue: "Just another order :D"
-//             }]
-//           }]
-//         }],
-//       consumers: [{
-//         topic: "orchestration",
-//         fromBeginning: true
-//       }]
-//     },
-//   ]
-// }]
+let tempData: Setup[] = [];
 
 const exampleObject = [
   {

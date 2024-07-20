@@ -2,6 +2,8 @@ FROM node:18
 
 WORKDIR /usr/src/app
 
+ENV port=8888
+
 COPY package*.json ./
 
 RUN npm install -f
@@ -13,4 +15,4 @@ COPY . .
 
 EXPOSE 8888
 
-CMD ["pm2-runtime", "index.ts", "--name", "saga_master", "-i", "-1", "--", "-p", "8888"]
+CMD [ "pm2-runtime", "npm", "--", "start" ]
