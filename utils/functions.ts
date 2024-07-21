@@ -1,7 +1,8 @@
 import { Request, Response } from "express"
 import { KafkaPayload, KafkaProducerUtilFunction, SagaKafkaSetupData, SagaRestSetupData } from "../types";
-import { LOGGING_EVENT_TYPE } from "./enum";
+import { API_TYPE, COMMUNICATION_TYPE, LOGGING_EVENT_TYPE } from "./enum";
 import { Kafka } from "kafkajs";
+import { setupData } from "../controller/setup";
 
 
 export function extractToken (req: Request) {
@@ -12,6 +13,47 @@ export function extractToken (req: Request) {
     //     return req.query.token;
     // }
     return null;
+}
+
+export function validateSetupBody(setupBody: SagaRestSetupData[] | SagaKafkaSetupData[], url: string): string {
+    const { KAFKA, REST } = COMMUNICATION_TYPE;
+    // Check if url is not dublicated
+    if (setupData.some(setup => setup.url === url)) return "A setup has already been created with this url. Please use a unique url for this setup.";
+    if (Array.isArray(setupBody) && setupBody.length > 0) {
+        let errorMessage = "";
+        let communicationType: undefined | COMMUNICATION_TYPE = undefined;
+        for (let i = 0; i < setupBody.length; i++) {
+            const setupBodyItem = setupBody[i];
+            if (!communicationType) communicationType = setupBodyItem.communicateType; 
+            // Validate the communication type in the setup to ensure communication type consistency.
+            if (communicationType !== setupBodyItem.communicateType || !communicationType) {
+                errorMessage = "Communicate type mismatched or missing! Saga Master currently doesn't support multiple communication type for a single orchestration process.";
+                break;
+            }
+            // Setup validation for KAFKA communication type
+            if (communicationType === KAFKA) {
+                const { clientId = '', brokers = [], producer: { topic: producerTopic = '' } = {}, serviceName = '', consumer: { topic: consumerTopic = '', groupId = '' } = {}, compensateProducer: { topic: compensateProducerTopic = '' } = {}, compensateConsumer: { topic: compensateConsumerTopic = '', groupId: compensateConsumerGroupId = '' } = {}  } = setupBodyItem as SagaKafkaSetupData || {};                const objectMapper: {[key: string]: string | string[]} = { clientId, brokers, serviceName, producerTopic, consumerTopic, groupId, compensateProducerTopic, compensateConsumerGroupId, compensateConsumerTopic };
+                const errorKeys = Object.keys(objectMapper).filter((item) => objectMapper[item] === undefined || objectMapper[item] === "");
+                if (Array.isArray(errorKeys) && errorKeys.length > 0) {
+                  errorMessage = `${errorKeys.toLocaleString()} value/values are invalid on setup index ${i}`;
+                  break;
+                }
+            }
+            // Setup validation for REST communication type
+            else if (communicationType === REST) {
+                const { apiType = '', apiUrl = '', compensateApiUrl = '', compensateApiType = '', serviceName = '', triggerCompensate = ''  } = setupBodyItem as SagaRestSetupData;
+                const objectMapper: {[key: string]: string | API_TYPE | Boolean } = { apiType, apiUrl, serviceName, triggerCompensate, ...(triggerCompensate ? { compensateApiUrl, compensateApiType } : {}) };
+                const errorKeys = Object.keys(objectMapper).filter((item) => objectMapper[item] === undefined || objectMapper[item] === '');
+                if (Array.isArray(errorKeys) && errorKeys.length > 0) {
+                  errorMessage = `${errorKeys.toLocaleString()} value/values are invalid on setup index ${i}`;
+                  break;
+                }
+            }
+        };
+        return errorMessage;
+    } else {
+        return "Invalid request.";
+    }
 }
 
 export function addPathAndQueryToUrlFromResponse (loopData: SagaRestSetupData) {
@@ -43,7 +85,7 @@ const destructureConsumerConfig = (loopData: SagaKafkaSetupData, isCompensation?
 }
 
 
-// !TBD: This function needs to a bit more work ... it is a bit complicated atm 
+// TODO: This function needs to a bit more work ... it is a bit complicated atm 
 
 // export function addQueryParamsToUrlFromResponse(loopData: SagaRestSetupData, url: string) {
 //     if (!loopData.compensateApiUrl) return "";
@@ -191,3 +233,5 @@ const kafkaConsumerCompensation = async (res: Response, responseQueue: any, orch
         console.error(err);
     }
 }
+
+
