@@ -1,93 +1,54 @@
 import { Request, Response, NextFunction } from "express";
 import { SagaRestSetupData, Setup } from "../types";
-// import { SagaRestSetupData } from "../types"; // Remove this too
-import { logging } from "../utils/functions";
+import { logging, validateSetupBody } from "../utils/functions";
 import { LOGGING_EVENT_TYPE } from "../utils/enum";
+import { exampleKafka, exampleRest } from "../utils/constants";
 
-let tempData: Setup[] = [];
-
-const exampleObject = [
-  {
-    communicateType: "REST",
-    apiType: "POST",
-    apiUrl: "http://localhost:8888/api/examples/post-api",
-    compensateApiUrl: "http://localhost:8888/api/compensate/trigger",
-    serviceName: "order",
-    sendResponseToAPI: false,
-    triggerCompensate: true,
-  },
-  {
-    communicateType: "REST",
-    apiType: "GET",
-    apiUrl: "http://localhost:8888/api/examples/get-api",
-    compensateApiUrl: "http://localhost:8888/api/compensate/trigger",
-    serviceName: "inventory",
-    sendResponseToAPI: false,
-    triggerCompensate: true,
-  },
-  {
-    communicateType: "REST",
-    apiType: "PUT",
-    apiUrl: "http://localhost:8888/api/examples/put-api",
-    compensateApiUrl: "http://localhost:8888/api/compensate/trigger",
-    serviceName: "payment",
-    sendResponseToAPI: false,
-    triggerCompensate: true,
-  },
-  {
-    communicateType: "REST",
-    apiType: "PUT",
-    apiUrl: "http://localhost:8888/api/examples/fail-api",
-    compensateApiUrl: "http://localhost:8888/api/compensate/trigger",
-    serviceName: "notify",
-    sendResponseToAPI: false,
-    triggerCompensate: true,
-  },
-];
+let setupData: Setup[] = [];
 
 const setSetup = async (req: Request, res: Response, next: NextFunction) => {
-  if (Array.isArray(req.body?.setup) && req.body?.setup?.length) {
-    const setup = req.body?.setup?.map((v: SagaRestSetupData) => ({ ...v, isSuccess: false, response: {}, triggerCompensate: v?.triggerCompensate ?? true }));
-    tempData.unshift({
-      url: req.body?.url,
-      setup: setup,
-    })
-  } else
-    return res.json({
-      message: "Invalid request.",
-      example: exampleObject,
-    });
+  const errorMessage = validateSetupBody(req?.body?.setup, req?.body?.url);
+  if (errorMessage) return res.status(400).json({
+    message: errorMessage,
+    exampleOfRest: exampleRest,
+    exampleOfKafka: exampleKafka
+  })
+  const setup = req.body?.setup?.map((v: SagaRestSetupData) => ({ ...v, isSuccess: false, response: {}, triggerCompensate: v?.triggerCompensate ?? true }));
+  setupData.unshift({
+    url: req.body?.url,
+    setup: setup,
+  });
   logging(LOGGING_EVENT_TYPE.SETUP, req.body);
   return res.json({
     message: "Setup done successfully!",
-    response: tempData,
+    response: setupData,
   });
 };
 
 const getSetup = async (req: Request, res: Response, next: NextFunction) => {
-  return res.json(tempData);
+  return res.json(setupData);
 };
 
 const updateSetup = async (req: Request, res: Response, next: NextFunction) => {
   const { url } = req.params;
-  const indexOfSetupToBeUpdated = tempData.findIndex((t: any) => t?.url === url); // Remove any when done
+  const indexOfSetupToBeUpdated = setupData.findIndex((t: any) => t?.url === url); // Remove any when done
   if (indexOfSetupToBeUpdated === -1) return res.status(404).json("The url provided doesn't exist in the system");
-  tempData[indexOfSetupToBeUpdated].setup = req.body?.setup?.map((v: SagaRestSetupData) => ({ ...v, isSuccess: false, response: {}, triggerCompensate: v?.triggerCompensate ?? true }));
+  setupData[indexOfSetupToBeUpdated].setup = req.body?.setup?.map((v: SagaRestSetupData) => ({ ...v, isSuccess: false, response: {}, triggerCompensate: v?.triggerCompensate ?? true }));
   return res.status(200).json({
     message: `/${url} setup is updated successfully. Below is the updated setup.`,
-    setup: tempData
+    setup: setupData
   })
 }
 
 const deleteSetup = async (req: Request, res: Response, next: NextFunction) => {
   const { url } = req.params;
-  const indexOfDeleteSetup = tempData.findIndex((t: any) => t?.url === url); // Remove any when done
+  const indexOfDeleteSetup = setupData.findIndex((t: any) => t?.url === url); // Remove any when done
   if (indexOfDeleteSetup === -1) return res.status(404).json("The url provided doesn't exist in the system");
-  tempData.splice(indexOfDeleteSetup, 1);
+  setupData.splice(indexOfDeleteSetup, 1);
   return res.status(202).json({
     message: `/${url} setup is deleted successfully. Below is the updated setup.`,
-    setup: tempData
+    setup: setupData
   })
 }
 
-export { tempData, setSetup, getSetup, updateSetup, deleteSetup };
+export { setupData, setSetup, getSetup, updateSetup, deleteSetup };

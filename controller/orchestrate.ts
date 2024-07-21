@@ -1,5 +1,5 @@
 import { Request, Response } from "express"
-import { tempData } from "./setup";
+import { setupData } from "./setup";
 import { addPathAndQueryToUrlFromResponse, extractToken, kafkaConsumer, kafkaProducer, logging } from "../utils/functions";
 import { API_TYPE, COMMUNICATION_TYPE, LOGGING_EVENT_TYPE } from "../utils/enum";
 import { HttpClient } from "../utils/http-client";
@@ -62,12 +62,12 @@ const orchestrate = async (req: Request, res: Response) => {
 
 const validateOrchestrationBody = (req: Request, res: Response) => {
    const { url } = req.params;
-   if (tempData?.length <= 0) {
+   if (setupData?.length <= 0) {
       res.status(404).json("You need to setup the orchestrate in order to trigger a transaction.")
       return [];
    }
    else {
-      let orchestrateData: SagaRestSetupData[] | SagaKafkaSetupData[] = tempData?.find((t: any) => t?.url === url)?.setup ?? [];
+      let orchestrateData: SagaRestSetupData[] | SagaKafkaSetupData[] = setupData?.find((t: any) => t?.url === url)?.setup ?? [];
       if (!orchestrateData?.length) {
          res.status(404).json(`You need to setup the orchestrate for /${url} in order to trigger a transaction.`)
          return [];
